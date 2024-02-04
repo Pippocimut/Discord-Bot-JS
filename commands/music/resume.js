@@ -8,27 +8,21 @@ const {
 	StreamType,
 	AudioPlayerStatus,
 	VoiceConnectionStatus,
+    getVoiceConnection
 } = require('@discordjs/voice');
 
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('sing-resume')
-		.setDescription('Gets Youtube Link and plays the song'),
+		.setDescription('Resumes a song'),
 	async execute(interaction) {
-            const url = interaction.options.getString("url");
-            const member = interaction.guild.members.cache.get(interaction.member.user.id);
-            const voiceChannel = member.voice.channel;
             try {
-                const connection = joinVoiceChannel({
-                            channelId: voiceChannel.id,
-                            guildId: voiceChannel.guild.id,
-                            adapterCreator: voiceChannel.guild.voiceAdapterCreator,
-                        })
+                const connection = getVoiceConnection(interaction.member.guild.id)
                 connection.state.subscription.player.unpause();
                 interaction.reply("I'm supposed to be resuming a song")
         
             }catch(err){
-                    console.log("Error in try catch: "+err)
+                    console.log("Error in try catch resume.js: "+err)
             }
 	},
 };

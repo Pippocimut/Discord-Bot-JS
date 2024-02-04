@@ -8,6 +8,7 @@ const {
 	StreamType,
 	AudioPlayerStatus,
 	VoiceConnectionStatus,
+    getVoiceConnection
 } = require('@discordjs/voice');
 
 module.exports = {
@@ -15,20 +16,13 @@ module.exports = {
 		.setName('sing-stop')
 		.setDescription('Gets Youtube Link and plays the song'),
 	async execute(interaction) {
-            const url = interaction.options.getString("url");
-            const member = interaction.guild.members.cache.get(interaction.member.user.id);
-            const voiceChannel = member.voice.channel;
             try {
-                const connection = joinVoiceChannel({
-                            channelId: voiceChannel.id,
-                            guildId: voiceChannel.guild.id,
-                            adapterCreator: voiceChannel.guild.voiceAdapterCreator,
-                        })
-                connection.state.subscription.player.stop();
-                interaction.reply("I'm supposed to be resuming a song")
+                const connection = getVoiceConnection(interaction.member.guild.id)
+				connection.destroy()
+                interaction.reply("I'm supposed to be stopping a song")
         
             }catch(err){
-                    console.log("Error in try catch: "+err)
+                    console.log("Error in try catch stop.js: "+err)
             }
 	},
 };

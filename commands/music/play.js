@@ -1,5 +1,7 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, ReactionUserManager } = require('discord.js');
 const ytdl = require('ytdl-core')
+const ytpl = require('ytpl');
+const fs = require("fs")
 const {
 	joinVoiceChannel,
 	createAudioPlayer,
@@ -8,8 +10,13 @@ const {
 	StreamType,
 	AudioPlayerStatus,
 	VoiceConnectionStatus,
-} = require('@discordjs/voice');
+    getVoiceConnection,
 
+} = require('@discordjs/voice');
+const { info } = require('node-sass');
+const play = require('play-dl');
+const {Collection} = require('discord.js'); //imports discord.js
+const { get } = require('http');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -24,32 +31,76 @@ module.exports = {
             const url = interaction.options.getString("url");
             const member = interaction.guild.members.cache.get(interaction.member.user.id);
             const voiceChannel = member.voice.channel;
-            //console.log(member.guild.name)
-            //console.log(voiceChannel)
+            
             if(!voiceChannel){
-                interaction.reply("Yo you gotta be in a voice channel to make me sing")
+                return interaction.reply("Yo you gotta be in a voice channel to make me sing")
             }
-            console.log(url)
             try {
-                // Here we try to join the voicechat and save our connection into our object.
-                const player = createAudioPlayer();
-                const stream = await ytdl(url,{filter: "audioonly"})
-                const resource = createAudioResource(stream);
-                console.log(resource)
-                player.play(resource);
-                console.log("Player created")
+
+                queue = [];
+
+                if(ytdl.validateURL(url)){
+                    console.log("Song found")
+                    queue = [url]
+                }
+                else if(ytpl.validateID(url)){
+                    console.log("Playlist found")
+                    const playlist = await ytpl(url);
+                    queue = playlist.items.map(p =>  p.url);
+                }
+
+                const player = await initializeAudioPlayer(queue,interaction.member.guild.id)
+
                 const connection = joinVoiceChannel({
                             channelId: voiceChannel.id,
                             guildId: voiceChannel.guild.id,
                             adapterCreator: voiceChannel.guild.voiceAdapterCreator,
                         })
-                console.log("Connection created")
-                const subscription = connection.subscribe(player);
-                console.log("Subscription Created") 
+
+                connection.queue = queue
+                connection.subscribe(player);
+
                 interaction.reply("I'm supposed to be playing a song")
         
             }catch(err){
-                    console.log("Error in try catch: "+err)
+                    console.log("Error in try catch play.js: "+ err)
             }
 	},
 };
+
+async function getSong(url){
+    stream =  await play.stream(url)
+    const resource = createAudioResource(stream.stream, {
+        inputType : stream.type
+    })
+    return resource
+}
+async function initializeAudioPlayer(queue,guild_id){
+    
+    const player = createAudioPersonalizedPlayer(guild_id);
+    const resource = await getSong(queue[0])
+    player.play(resource);
+    return player
+}
+
+function createAudioPersonalizedPlayer(guild_id){
+    const player = createAudioPlayer();
+
+    player.on = (AudioPlayerStatus.Idle, async () => {
+
+        const connection = getVoiceConnection(guild_id)
+
+        connection.queue.shift()
+
+        if(connection.queue[0]){
+            const resource = await getSong(connection.queue[0])
+            player.play(resource);
+            
+        }
+        else{
+            connection.destroy()
+        }
+    });
+
+    return player;
+}

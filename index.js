@@ -1,7 +1,8 @@
 const dotenv = require('dotenv')
 const fs = require('fs');
 const path = require('path');
-const initialize = require('./deploy-commands');
+const mongoose = require('mongoose');
+
 const {
 	joinVoiceChannel,
 	createAudioPlayer,
@@ -65,6 +66,11 @@ for (const file of eventFiles) {
 
 
 
-initialize.InitializeCommands().then(()=>{
+//initialize.InitializeCommands().then(()=>{
+mongoose
+  .connect(process.env.MONGODB_URI)
+  .then(result => {
     client.login(process.env.CLIENT_TOKEN);
-});
+  }
+)
+//});

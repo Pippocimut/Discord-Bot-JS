@@ -7,7 +7,7 @@ const foldersPath = path.join(__dirname, 'commands');
 const commandFolders = fs.readdirSync(foldersPath);
 
 // and deploy your commands!
-exports.InitializeCommands = async function(){
+(async function(){
     dotenv.config()
     const commands = [];
     for (const folder of commandFolders) {
@@ -33,6 +33,7 @@ exports.InitializeCommands = async function(){
 		const data = await rest.put(
             //Use Routes.applicationCommands for every guild the bot has permission in
 			Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
+			//Routes.applicationCommands(process.env.CLIENT_ID),
 			{ body: commands },
 		);
 
@@ -41,4 +42,4 @@ exports.InitializeCommands = async function(){
 		// And of course, make sure you catch and log any errors!
 		console.error(error);
 	}
-};
+})();
