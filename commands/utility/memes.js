@@ -1,6 +1,6 @@
 
 const { SlashCommandBuilder, Collection } = require('discord.js');
-
+var giphy = require('giphy-api')('2p0MgTooLdZapQWEQOXDieT1nGZYihKZ')
 
 module.exports = {
 	data: new SlashCommandBuilder()

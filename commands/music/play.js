@@ -14,9 +14,13 @@ const {
 
 } = require('@discordjs/voice');
 const { info } = require('node-sass');
+const wait = require('node:timers/promises').setTimeout;
 const play = require('play-dl');
 const {Collection} = require('discord.js'); //imports discord.js
 const { get } = require('http');
+const { connect } = require('mongoose');
+ 
+
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -31,40 +35,42 @@ module.exports = {
             const url = interaction.options.getString("url");
             const member = interaction.guild.members.cache.get(interaction.member.user.id);
             const voiceChannel = member.voice.channel;
-            
-            if(!voiceChannel){
-                return interaction.reply("Yo you gotta be in a voice channel to make me sing")
+
+            var connection;
+            var queue = [];
+            var player;
+
+            if(ytdl.validateURL(url)){
+                console.log("Song found")
+                queue.push(url)
             }
-            try {
+            else if(ytpl.validateID(url)){
+                console.log("Playlist found")
+                const playlist = await ytpl(url);
+                queue.push(...playlist.items.map(p =>  p.url));
+            }
 
-                queue = [];
-
-                if(ytdl.validateURL(url)){
-                    console.log("Song found")
-                    queue = [url]
-                }
-                else if(ytpl.validateID(url)){
-                    console.log("Playlist found")
-                    const playlist = await ytpl(url);
-                    queue = playlist.items.map(p =>  p.url);
-                }
-
-                const player = await initializeAudioPlayer(queue,interaction.member.guild.id)
-
-                const connection = joinVoiceChannel({
+            if(interaction.client.voice.adapters.size>0){
+                connection = getVoiceConnection(interaction.member.guild.id)
+                if(connection.queue)
+                    connection.queue.push(...queue);
+                if(connection.state.subscription.player)
+                    player = connection.state.subscription.player
+            }else{
+                connection = joinVoiceChannel({
                             channelId: voiceChannel.id,
                             guildId: voiceChannel.guild.id,
                             adapterCreator: voiceChannel.guild.voiceAdapterCreator,
                         })
-
+                player = createAudioPersonalizedPlayer(interaction.member.guild.id);
                 connection.queue = queue
+                player.play(await getSong(queue[0]),{bitrate: 96000})
+                await wait(100)
+                connection.queue.shift()
                 connection.subscribe(player);
-
-                interaction.reply("I'm supposed to be playing a song")
-        
-            }catch(err){
-                    console.log("Error in try catch play.js: "+ err)
             }
+
+            return interaction.reply("I'm supposed to be playing a song")
 	},
 };
 
@@ -75,31 +81,25 @@ async function getSong(url){
     })
     return resource
 }
-async function initializeAudioPlayer(queue,guild_id){
-    
-    const player = createAudioPersonalizedPlayer(guild_id);
-    const resource = await getSong(queue[0])
-    player.play(resource);
-    return player
-}
 
 function createAudioPersonalizedPlayer(guild_id){
     const player = createAudioPlayer();
 
-    player.on = (AudioPlayerStatus.Idle, async () => {
-
+    player.on(AudioPlayerStatus.Idle, async () => {
         const connection = getVoiceConnection(guild_id)
-
-        connection.queue.shift()
-
+        if(!connection){
+            return interaction.reply("Bot not in voice chat")
+        }
+        await wait(50)
+        console.log("I'm idle")
         if(connection.queue[0]){
-            const resource = await getSong(connection.queue[0])
-            player.play(resource);
-            
+            const resource = await getSong(await connection.queue[0])
+            player.play(resource,{bitrate: 96000});
         }
         else{
             connection.destroy()
         }
+        connection.queue.shift()
     });
 
     return player;

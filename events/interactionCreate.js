@@ -1,5 +1,8 @@
 const { Events, Collection} = require('discord.js');
+const {getVoiceConnection
+} = require('@discordjs/voice');
 
+const validateSing = require('../util/validateSing')
 module.exports = {
 	name: Events.InteractionCreate,
 	async execute(interaction) {
@@ -12,6 +15,10 @@ module.exports = {
 			return;
 		}
 
+		console.log(interaction.commandName)
+
+		if(message = validateSing(interaction))
+			return interaction.reply(message)
 
 		const { cooldowns } = interaction.client;
 
@@ -26,7 +33,7 @@ module.exports = {
 
 		if (timestamps.has(interaction.user.id)) {
 			const expirationTime = timestamps.get(interaction.user.id) + cooldownAmount;
-
+			
 			if (now < expirationTime) {
 				const expiredTimestamp = Math.round(expirationTime / 1_000);
 				return interaction.reply({ content: `Please wait, you are on a cooldown for \`${command.data.name}\`. You can use it again <t:${expiredTimestamp}:R>.`, ephemeral: true });

@@ -11,6 +11,7 @@ const {
     getVoiceConnection
 } = require('@discordjs/voice');
 
+ 
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('sing-next')

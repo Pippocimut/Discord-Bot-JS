@@ -10,7 +10,7 @@ const {
 	VoiceConnectionStatus,
     getVoiceConnection
 } = require('@discordjs/voice');
-
+ 
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -19,7 +19,7 @@ module.exports = {
 	async execute(interaction) {
             try {
                 const connection = getVoiceConnection(interaction.member.guild.id)
-                connection.state.subscription.player.pause();
+                connection.state.subscription.player.pause(true);
                 interaction.reply("I'm supposed to pause");
         
             }catch(err){

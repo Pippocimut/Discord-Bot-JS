@@ -22,16 +22,12 @@ const client = new Client({ intents: [
 		GatewayIntentBits.MessageContent,
 		GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildVoiceStates] 
-        }); //creates new client
-
-client.once(Events.ClientReady, readyClient => {
-    console.log(`Ready! Logged in as ${readyClient.user.tag}`);
-});
-
+    });
 
 client.cooldowns = new Collection();
 client.commands = new Collection();
 
+//Load commands
 const foldersPath = path.join(__dirname, 'commands');
 const commandFolders = fs.readdirSync(foldersPath);
 
@@ -50,6 +46,7 @@ for (const folder of commandFolders) {
 	}
 }
 
+//Load events
 const eventsPath = path.join(__dirname, 'events');
 const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
 
@@ -63,14 +60,10 @@ for (const file of eventFiles) {
 	}
 }
 
-
-
-
-//initialize.InitializeCommands().then(()=>{
+//Create connedtion to mongo server before starting the client
 mongoose
   .connect(process.env.MONGODB_URI)
   .then(result => {
     client.login(process.env.CLIENT_TOKEN);
   }
 )
-//});
